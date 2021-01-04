@@ -11,10 +11,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 
-'''  # BEGIN TODO #
-
-'''  # END TODO #
-
 # Using Firefox to access web
 driver = webdriver.Firefox(executable_path=os.path.abspath('geckodriver'))
 tag_list = []
@@ -99,7 +95,10 @@ def select_tamu_login():
 
 
 def enter_user():
+    # Input desired username here
     driver.find_element(By.ID, 'username').send_keys('txconnorriley')
+    
+    # Selects the password field so user can begin typing
     driver.find_element(By.ID, 'password').click()
 
 
