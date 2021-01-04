@@ -13,7 +13,7 @@ Prepare Selenium
 
 Prepare Firefox Driver
 - Download geckodriver from Repo
-- Give executable permission 'sudo chmod +x geckodriver'
+- Give executable permission `sudo chmod +x geckodriver`
 
 Prepare CSV file
 - Go to tamu.service-now.com
