@@ -18,6 +18,12 @@ count = 0
 number_of_articles = 0
 start_time = 0
 
+'''  # TODO 
+- Automate pulling KCS Knowledge Base entries
+- Download as CSV to working directory
+- Parse CSV using existing function csv_read
+'''  # TODO
+
 
 def generate_kb_list():
     print('Generating KB_Kist...')
