@@ -15,6 +15,8 @@ from selenium.webdriver.chrome.service import Service
 driver = webdriver.Firefox(executable_path=os.path.abspath('geckodriver'))
 tag_list = []
 count = 0
+number_of_articles = 0
+start_time = 0
 
 
 def generate_kb_list():
@@ -97,7 +99,7 @@ def select_tamu_login():
 def enter_user():
     # Input desired username here
     driver.find_element(By.ID, 'username').send_keys('txconnorriley')
-    
+
     # Selects the password field so user can begin typing
     driver.find_element(By.ID, 'password').click()
 
@@ -208,6 +210,18 @@ def servicenow_process_kb(kb_number):
     time.sleep(1)
 
 
+def job_start():
+    print('\nBeginning Meta Tag Scrape')
+    print('There are ' + str(number_of_articles), end='')
+    print(' articles that need to be scraped.')
+
+
+def print_progress():
+    percent_done = round(float(count) / float(number_of_articles) * 100.0, 2)
+    print('\n----- ' + str(percent_done) + '% -----')
+    print('Time elapsed: %s s \n' % round(time.time() - start_time, 2))
+
+
 kb_list = generate_kb_list()
 number_of_articles = len(kb_list)
 
@@ -215,21 +229,16 @@ number_of_articles = len(kb_list)
 driver.get('https://tamuplay.service-now.com/')
 
 # Login to tamuplay
-servicenow_login()
+# servicenow_login()
 start_time = time.time()
-str_num = str(number_of_articles)
-print('\nBeginning Meta Tag Scrape')
-print('There are ' + str_num + ' articles that need to be scraped.')
-print('Current time: ' + str(start_time))
-print(' ')
+
+job_start()
 
 # For all KBs in the list, process valid_to dates
 for article in kb_list:
     servicenow_process_kb(article)
+    print_progress()
     count += 1
-    percent_done = round(float(count) / float(number_of_articles) * 100.0, 2)
-    print('\n----- ' + str(percent_done) + '% -----')
-    print('Time elapsed: %s s \n' % round(time.time() - start_time, 2))
 
 csv_write()
 
