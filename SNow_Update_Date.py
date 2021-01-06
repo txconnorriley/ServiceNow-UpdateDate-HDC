@@ -13,12 +13,11 @@ from selenium.webdriver.chrome.service import Service
 
 # Using Firefox to access web
 driver = webdriver.Firefox(executable_path=os.path.abspath('geckodriver'))
-tag_list = []
 count = 0
 number_of_articles = 0
 start_time = 0
 
-'''  # TODO 
+'''  # TODO
 - Automate pulling KCS Knowledge Base entries
 - Download as CSV to working directory
 - Parse CSV using existing function csv_read
@@ -26,6 +25,26 @@ start_time = 0
 
 
 def generate_kb_list():
+    ''' 
+    # Navigating to Reports page
+    # Switch to the correct frame
+    driver.switch_to.default_content()
+
+    # Check to make sure that the Navigator pane is open (is 'Minimize Navigator')
+    title="Minimize Navigator"
+
+    # Select Filter Navigator
+    id="filter"
+
+    # Send keys "View / Run"
+    text = "View / Run"
+
+    # Change pane and creat report
+    id="create_report"
+
+    id="report-name"
+    '''
+
     print('Generating KB_Kist...')
     cwd = os.getcwd()
     f = os.listdir(cwd)
@@ -69,21 +88,6 @@ def csv_read(csv_name):
             kb_list.append(kb_article)
 
         return kb_list
-
-
-def csv_write():
-    # Make .csv with all updated KBs and Meta Tags
-    with open("MetaTagList.csv", mode="w") as output:
-        tag_writer = csv.writer(
-            output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        tag_writer.writerow(["KB Article", "Meta Tags"])
-
-        for i in tag_list:
-            tag_writer.writerow([i[0], i[1]])
-
-        output.close()
-
-    return
 
 
 def job_complete():
@@ -182,10 +186,11 @@ def servicenow_edit_kb(kb_number):
 
         time.sleep(0.5)
 
-    servicenow_scrape_meta_tags(kb_number)
+    servicenow_update_valid_to(kb_number)
 
 
-def servicenow_scrape_meta_tags(kb_number):
+# This method needs to be updated to edit only ValidTo dates, no longer a need to pull Meta Tags
+def servicenow_update_valid_to(kb_number):
     # Find edit button and click
     meta_tag_field = ''
     scrape_count = 0
@@ -228,25 +233,29 @@ def print_progress():
     print('Time elapsed: %s s \n' % round(time.time() - start_time, 2))
 
 
-kb_list = generate_kb_list()
-number_of_articles = len(kb_list)
-
 # Open the website tamuplay
 driver.get('https://tamuplay.service-now.com/')
 
 # Login to tamuplay
-# servicenow_login()
-start_time = time.time()
+servicenow_login()
 
+# Wait for user to finish logging in
+while 'tamuplay' not in driver.current_url:
+    time.sleep(1)
+
+# Start the clock
+start_time = time.time()
 job_start()
+
+# TODO Navigate to Reports and generate CSV
+kb_list = generate_kb_list()
+number_of_articles = len(kb_list)
 
 # For all KBs in the list, process valid_to dates
 for article in kb_list:
     servicenow_process_kb(article)
     print_progress()
     count += 1
-
-csv_write()
 
 job_complete()
 driver.quit()
