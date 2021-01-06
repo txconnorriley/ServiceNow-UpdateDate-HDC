@@ -377,9 +377,18 @@ def servicenow_update_valid_to(kb_number):
         time.sleep(0.5)
 
 
-def servicenow_process_kb(kb_number):
-    servicenow_search(kb_number)
-    time.sleep(1)
+def servicenow_process_kbs(kb_list):
+    # For each article in the list...
+    for article in kb_list:
+        # Begin the process by searching
+        servicenow_search(article)
+
+        # Print the progress and increment by one
+        print_progress()
+        count += 1
+
+        # Give time for the system to recover
+        time.sleep(1)
 
 
 def print_progress():
@@ -403,10 +412,7 @@ kb_list = generate_kb_list()
 number_of_articles = len(kb_list)
 
 # For all KBs in the list, process valid_to dates
-for article in kb_list:
-    servicenow_process_kb(article)
-    print_progress()
-    count += 1
+servicenow_process_kbs(kb_list)
 
 job_complete()
 driver.quit()
