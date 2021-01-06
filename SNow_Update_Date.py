@@ -11,41 +11,150 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 
+# Establishing user profile for Firefox
+profile = webdriver.FirefoxProfile()
+profile.set_preference("browser.download.folderList", 2)
+profile.set_preference("browser.download.manager.showWhenStarting", False)
+profile.set_preference("browser.download.dir", os.getcwd())
+profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
+
 # Using Firefox to access web
-driver = webdriver.Firefox(executable_path=os.path.abspath('geckodriver'))
-tag_list = []
+driver = webdriver.Firefox(
+    profile, executable_path=os.path.abspath('geckodriver'))
+
+# Establishing global variables
 count = 0
 number_of_articles = 0
 start_time = 0
+cwd = os.getcwd()
+
+'''  # TODO
+- Automate pulling KCS Knowledge Base entries
+- Download as CSV to working directory
+- Parse CSV using existing function csv_read
+- Readd updating Valid To dates
+'''  # TODO
 
 
 def generate_kb_list():
+    ''' 
+    # Navigating to Reports page
+    # Switch to the correct frame
+    driver.switch_to.default_content()
+
+    # Check to make sure that the Navigator pane is open (is 'Minimize Navigator')
+    title="Minimize Navigator"
+
+    # Select Filter Navigator
+    id="filter"
+
+    # Send keys "Reports"
+    text = "Reports"
+
+    # Change click Create New
+    text = "Create New"
+
+    # Switch back to the main frame
+    driver.switch_to.frame('gsft_main')
+
+    # Fill out report name
+    id="report-name"
+    send key "KCS Knowledge Base"
+
+    # Check to see Source Type is Table
+    id="select-source-type"
+
+    # Pick which table to pull from
+    id="select2-chosen-1"
+    send key "Knowledge [kb_knowledge]"
+
+    # Click the next button to load results
+    id="next-button-step-1"
+
+    # Click filter results
+    id="open-filters-button"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Knowledge base"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select KCS
+    id="select2-drop-mask"
+    send key "KCS"
+    send key "ENTER"
+
+    # Add an AND condition
+    data-original-title="Add AND condition"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Workflow"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select Published
+    label="-- None --"
+    label="Published"
+
+    # Add an AND condition
+    data-original-title="Add AND condition"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Valid to"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select Before
+    label="on"
+    label="before"
+
+    # Select Today
+    text="-- None --"
+    text="Days"
+    text="Today"
+
+    # Run Report
+    id="run-report"
+
+    # Export CSV
+    text = "Number"
+    *RIGHT CLICK*
+    text = "Export"
+    text = "CSV"
+
+    # Select Download
+    id="download_button"
+
+    '''
+
     print('Generating KB_Kist...')
-    cwd = os.getcwd()
-    f = os.listdir(cwd)
+    files = os.listdir(cwd)
 
     # Instantiate list for csv files
-    csv_f = []
+    csv_files = []
 
     # Check list of all files for all csv files
     # Add csv files ot list of csv files
-    for x in f:
-        if x.endswith('.csv'):
-            csv_f.append(x)
+    for file in files:
+        if file.endswith('.csv'):
+            csv_files.append(file)
 
     kb_list = []
 
     # For all csv files read in report
-    for csv_file in csv_f:
+    for csv_file in csv_files:
         print('Now reading \"' + csv_file + '\"...')
         temp_kb_list = csv_read(csv_file)
 
         for article in temp_kb_list:
             kb_list.append(article)
 
-        print('...Finished reading \"' + csv_file + '\"!')
+        print('Finished reading \"' + csv_file + '\"!')
 
-    print('...KB_List generated!')
+    print('KB_List generated!')
     return kb_list
 
 
@@ -65,22 +174,80 @@ def csv_read(csv_name):
         return kb_list
 
 
-def csv_write():
-    # Make .csv with all updated KBs and Meta Tags
-    with open("MetaTagList.csv", mode="w") as output:
-        tag_writer = csv.writer(
-            output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        tag_writer.writerow(["KB Article", "Meta Tags"])
+def job_start():
+    print('\nBeginning Meta Tag Scrape')
+    print('There are ' + str(number_of_articles), end='')
+    print(' articles that need to be scraped.')
 
-        for i in tag_list:
-            tag_writer.writerow([i[0], i[1]])
 
-        output.close()
+def remove_csv_files():
+    print('Removing .csv files...')
 
-    return
+    # Get current working directory and files within
+
+    files = os.listdir(cwd)
+
+    # Instantiate list for csv files
+    csv_files = []
+
+    # Check list of all files for all csv files
+    # Add csv files ot list of csv files
+    for file in files:
+        if file.endswith('.csv'):
+            csv_files.append(file)
+
+    # If there are no csv files, exit
+    if len(csv_files) == 0:
+        print('No .csv files found...\n')
+        return
+
+    # If there are csv files, remove them
+    for file in csv_files:
+        # Join file to cwd to get abs path
+        file_to_remove = os.path.join(cwd, file)
+
+        # Remove file
+        print('Removing ' + file + '...')
+        os.remove(file_to_remove)
+
+
+def remove_log_files():
+    print('Removing .log files...')
+
+    # Get current working directory and files within
+    files = os.listdir(cwd)
+
+    # Instantiate list for log files
+    log_files = []
+
+    # Check list of all files for all log files
+    # Add log files ot list of log files
+    for file in files:
+        if file.endswith('.log'):
+            log_files.append(file)
+
+    # If there are no log files, exit
+    if len(log_files) == 0:
+        print('No .log files found...\n')
+        return
+
+    # If there are log files, remove them
+    for file in log_files:
+        # Join file to cwd to get abs path
+        file_to_remove = os.path.join(cwd, file)
+
+        # Remove file
+        print('Removing ' + file + '...')
+        os.remove(file_to_remove)
 
 
 def job_complete():
+    print(' ')
+
+    # Clean up cwd after execution
+    remove_csv_files()
+    remove_log_files()
+
     print(' ')
     print('******************')
     print('** JOB COMPLETE **')
@@ -110,6 +277,10 @@ def servicenow_login():
 
     select_tamu_login()
     enter_user()
+
+    # Wait for user to finish logging in
+    while 'tamuplay' not in driver.current_url:
+        time.sleep(1)
 
 
 def interact_search_field(search_field, kb_number):
@@ -176,10 +347,11 @@ def servicenow_edit_kb(kb_number):
 
         time.sleep(0.5)
 
-    servicenow_scrape_meta_tags(kb_number)
+    servicenow_update_valid_to(kb_number)
 
 
-def servicenow_scrape_meta_tags(kb_number):
+# This method needs to be updated to edit only ValidTo dates, no longer a need to pull Meta Tags
+def servicenow_update_valid_to(kb_number):
     # Find edit button and click
     meta_tag_field = ''
     scrape_count = 0
@@ -205,15 +377,18 @@ def servicenow_scrape_meta_tags(kb_number):
         time.sleep(0.5)
 
 
-def servicenow_process_kb(kb_number):
-    servicenow_search(kb_number)
-    time.sleep(1)
+def servicenow_process_kbs(kb_list):
+    # For each article in the list...
+    for article in kb_list:
+        # Begin the process by searching
+        servicenow_search(article)
 
+        # Print the progress and increment by one
+        print_progress()
+        count += 1
 
-def job_start():
-    print('\nBeginning Meta Tag Scrape')
-    print('There are ' + str(number_of_articles), end='')
-    print(' articles that need to be scraped.')
+        # Give time for the system to recover
+        time.sleep(1)
 
 
 def print_progress():
@@ -222,25 +397,22 @@ def print_progress():
     print('Time elapsed: %s s \n' % round(time.time() - start_time, 2))
 
 
-kb_list = generate_kb_list()
-number_of_articles = len(kb_list)
-
 # Open the website tamuplay
 driver.get('https://tamuplay.service-now.com/')
 
 # Login to tamuplay
-# servicenow_login()
-start_time = time.time()
+servicenow_login()
 
+# Start the clock
+start_time = time.time()
 job_start()
 
-# For all KBs in the list, process valid_to dates
-for article in kb_list:
-    servicenow_process_kb(article)
-    print_progress()
-    count += 1
+# TODO Navigate to Reports and generate CSV
+kb_list = generate_kb_list()
+number_of_articles = len(kb_list)
 
-csv_write()
+# For all KBs in the list, process valid_to dates
+servicenow_process_kbs(kb_list)
 
 job_complete()
 driver.quit()
