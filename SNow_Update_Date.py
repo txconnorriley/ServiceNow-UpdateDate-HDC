@@ -26,6 +26,7 @@ driver = webdriver.Firefox(
 count = 0
 number_of_articles = 0
 start_time = 0
+cwd = os.getcwd()
 
 '''  # TODO
 - Automate pulling KCS Knowledge Base entries
@@ -130,7 +131,6 @@ def generate_kb_list():
     '''
 
     print('Generating KB_Kist...')
-    cwd = os.getcwd()
     files = os.listdir(cwd)
 
     # Instantiate list for csv files
@@ -182,7 +182,9 @@ def job_start():
 
 def remove_csv_files():
     print('Removing .csv files...')
-    cwd = os.getcwd()
+
+    # Get current working directory and files within
+
     files = os.listdir(cwd)
 
     # Instantiate list for csv files
@@ -194,20 +196,25 @@ def remove_csv_files():
         if file.endswith('.csv'):
             csv_files.append(file)
 
+    # If there are no csv files, exit
     if len(csv_files) == 0:
         print('No .csv files found...\n')
         return
 
+    # If there are csv files, remove them
     for file in csv_files:
+        # Join file to cwd to get abs path
         file_to_remove = os.path.join(cwd, file)
 
+        # Remove file
         print('Removing ' + file + '...')
         os.remove(file_to_remove)
 
 
 def remove_log_files():
     print('Removing .log files...')
-    cwd = os.getcwd()
+
+    # Get current working directory and files within
     files = os.listdir(cwd)
 
     # Instantiate list for log files
@@ -219,13 +226,17 @@ def remove_log_files():
         if file.endswith('.log'):
             log_files.append(file)
 
+    # If there are no log files, exit
     if len(log_files) == 0:
         print('No .log files found...\n')
         return
 
+    # If there are log files, remove them
     for file in log_files:
+        # Join file to cwd to get abs path
         file_to_remove = os.path.join(cwd, file)
 
+        # Remove file
         print('Removing ' + file + '...')
         os.remove(file_to_remove)
 
@@ -233,6 +244,7 @@ def remove_log_files():
 def job_complete():
     print(' ')
 
+    # Clean up cwd after execution
     remove_csv_files()
     remove_log_files()
 
