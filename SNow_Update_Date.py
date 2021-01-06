@@ -534,6 +534,8 @@ def servicenow_process_kbs():
         # Give time for the system to recover
         time.sleep(1)
 
+    job_complete()
+
 
 ## ---------------------------------------------------------------------------- ##
 # Open the website tamuplay
@@ -546,5 +548,4 @@ servicenow_login()
 # Search > Edit > Checkout > Update > Publish
 servicenow_process_kbs()
 
-job_complete()
 driver.quit()
