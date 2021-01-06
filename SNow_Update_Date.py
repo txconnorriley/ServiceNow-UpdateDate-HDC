@@ -36,13 +36,86 @@ def generate_kb_list():
     # Select Filter Navigator
     id="filter"
 
-    # Send keys "View / Run"
-    text = "View / Run"
+    # Send keys "Reports"
+    text = "Reports"
 
-    # Change pane and creat report
-    id="create_report"
+    # Change click Create New
+    text = "Create New"
 
+    # Switch back to the main frame
+    driver.switch_to.frame('gsft_main')
+
+    # Fill out report name
     id="report-name"
+    send key "KCS Knowledge Base"
+
+    # Check to see Source Type is Table
+    id="select-source-type"
+
+    # Pick which table to pull from
+    id="select2-chosen-1"
+    send key "Knowledge [kb_knowledge]"
+
+    # Click the next button to load results
+    id="next-button-step-1"
+
+    # Click filter results
+    id="open-filters-button"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Knowledge base"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select KCS
+    id="select2-drop-mask"
+    send key "KCS"
+    send key "ENTER"
+
+    # Add an AND condition
+    data-original-title="Add AND condition"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Workflow"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select Published
+    label="-- None --"
+    label="Published"
+
+    # Add an AND condition
+    data-original-title="Add AND condition"
+
+    # Select Field button
+    text="-- choose field --"
+    send key "Valid to"
+    send key "DOWN"
+    send key "ENTER"
+
+    # Select Before
+    label="on"
+    label="before"
+
+    # Select Today
+    text="-- None --"
+    text="Days"
+    text="Today"
+
+    # Run Report
+    id="run-report"
+
+    # Export CSV
+    text = "Number"
+    *RIGHT CLICK*
+    text = "Export"
+    text = "CSV"
+
+    # Select Download
+    id="download_button"
+
     '''
 
     print('Generating KB_Kist...')
