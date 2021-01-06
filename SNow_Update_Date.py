@@ -11,8 +11,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 
+# Establishing user profile for Firefox
+profile = webdriver.FirefoxProfile()
+profile.set_preference("browser.download.folderList", 2)
+profile.set_preference("browser.download.manager.showWhenStarting", False)
+profile.set_preference("browser.download.dir", os.getcwd())
+profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/csv")
+
 # Using Firefox to access web
-driver = webdriver.Firefox(executable_path=os.path.abspath('geckodriver'))
+driver = webdriver.Firefox(
+    profile, executable_path=os.path.abspath('geckodriver'))
+
+# Establishing global variables
 count = 0
 number_of_articles = 0
 start_time = 0
@@ -21,6 +31,7 @@ start_time = 0
 - Automate pulling KCS Knowledge Base entries
 - Download as CSV to working directory
 - Parse CSV using existing function csv_read
+- Readd updating Valid To dates
 '''  # TODO
 
 
@@ -120,30 +131,30 @@ def generate_kb_list():
 
     print('Generating KB_Kist...')
     cwd = os.getcwd()
-    f = os.listdir(cwd)
+    files = os.listdir(cwd)
 
     # Instantiate list for csv files
-    csv_f = []
+    csv_files = []
 
     # Check list of all files for all csv files
     # Add csv files ot list of csv files
-    for x in f:
-        if x.endswith('.csv'):
-            csv_f.append(x)
+    for file in files:
+        if file.endswith('.csv'):
+            csv_files.append(file)
 
     kb_list = []
 
     # For all csv files read in report
-    for csv_file in csv_f:
+    for csv_file in csv_files:
         print('Now reading \"' + csv_file + '\"...')
         temp_kb_list = csv_read(csv_file)
 
         for article in temp_kb_list:
             kb_list.append(article)
 
-        print('...Finished reading \"' + csv_file + '\"!')
+        print('Finished reading \"' + csv_file + '\"!')
 
-    print('...KB_List generated!')
+    print('KB_List generated!')
     return kb_list
 
 
@@ -163,7 +174,68 @@ def csv_read(csv_name):
         return kb_list
 
 
+def job_start():
+    print('\nBeginning Meta Tag Scrape')
+    print('There are ' + str(number_of_articles), end='')
+    print(' articles that need to be scraped.')
+
+
+def remove_csv_files():
+    print('Removing .csv files...')
+    cwd = os.getcwd()
+    files = os.listdir(cwd)
+
+    # Instantiate list for csv files
+    csv_files = []
+
+    # Check list of all files for all csv files
+    # Add csv files ot list of csv files
+    for file in files:
+        if file.endswith('.csv'):
+            csv_files.append(file)
+
+    if len(csv_files) == 0:
+        print('No .csv files found...\n')
+        return
+
+    for file in csv_files:
+        file_to_remove = os.path.join(cwd, file)
+
+        print('Removing ' + file + '...')
+        os.remove(file_to_remove)
+
+
+def remove_log_files():
+    print('Removing .log files...')
+    cwd = os.getcwd()
+    files = os.listdir(cwd)
+
+    # Instantiate list for log files
+    log_files = []
+
+    # Check list of all files for all log files
+    # Add log files ot list of log files
+    for file in files:
+        if file.endswith('.log'):
+            log_files.append(file)
+
+    if len(log_files) == 0:
+        print('No .log files found...\n')
+        return
+
+    for file in log_files:
+        file_to_remove = os.path.join(cwd, file)
+
+        print('Removing ' + file + '...')
+        os.remove(file_to_remove)
+
+
 def job_complete():
+    print(' ')
+
+    remove_csv_files()
+    remove_log_files()
+
     print(' ')
     print('******************')
     print('** JOB COMPLETE **')
@@ -193,6 +265,10 @@ def servicenow_login():
 
     select_tamu_login()
     enter_user()
+
+    # Wait for user to finish logging in
+    while 'tamuplay' not in driver.current_url:
+        time.sleep(1)
 
 
 def interact_search_field(search_field, kb_number):
@@ -294,12 +370,6 @@ def servicenow_process_kb(kb_number):
     time.sleep(1)
 
 
-def job_start():
-    print('\nBeginning Meta Tag Scrape')
-    print('There are ' + str(number_of_articles), end='')
-    print(' articles that need to be scraped.')
-
-
 def print_progress():
     percent_done = round(float(count) / float(number_of_articles) * 100.0, 2)
     print('\n----- ' + str(percent_done) + '% -----')
@@ -311,10 +381,6 @@ driver.get('https://tamuplay.service-now.com/')
 
 # Login to tamuplay
 servicenow_login()
-
-# Wait for user to finish logging in
-while 'tamuplay' not in driver.current_url:
-    time.sleep(1)
 
 # Start the clock
 start_time = time.time()
