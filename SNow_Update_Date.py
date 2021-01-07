@@ -6,9 +6,14 @@ import datetime
 
 from selenium import webdriver
 from selenium.webdriver import ActionChains
+import selenium.webdriver.common.action_chains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
+
 
 ## ---------------------------------------------------------------------------- ##
 # Establishing user profile for Firefox
@@ -37,8 +42,57 @@ cwd = os.getcwd()
 - Automate pulling KCS Knowledge Base entries
 - Download as CSV to working directory
 - Parse CSV using existing function csv_read
-- Readd updating Valid To dates
 '''  # TODO
+
+## ---------------------------------------------------------------------------- ##
+
+
+def find_elem_by_xpath(xpath):
+    var_name = ''
+    attempt_count = 0
+
+    while(True):
+        try:
+            var_name = driver.find_element(By.XPATH, xpath)
+        except Exception:
+            if attempt_count < 20:
+                pass
+            else:
+                print("Unexpected error:", sys.exc_info()[0])
+                driver.quit()
+                raise
+
+        if not isinstance(var_name, str):
+            return var_name
+
+        attempt_count += 1
+        time.sleep(0.5)
+
+
+## ---------------------------------------------------------------------------- ##
+
+
+def find_elem_by_css(selector):
+    var_name = ''
+    attempt_count = 0
+
+    while(True):
+        try:
+            var_name = driver.find_element(By.CSS_SELECTOR, selector)
+        except Exception:
+            if attempt_count < 20:
+                pass
+            else:
+                print("Unexpected error:", sys.exc_info()[0])
+                driver.quit()
+                raise
+
+        if not isinstance(var_name, str):
+            return var_name
+
+        attempt_count += 1
+        time.sleep(0.5)
+
 
 ## ---------------------------------------------------------------------------- ##
 
@@ -61,6 +115,7 @@ def calc_valid_to_date():
 
 ## ---------------------------------------------------------------------------- ##
 
+
 def calc_current_date():
     today = date.today()
     return today.strftime("%m/%d/%Y")
@@ -77,128 +132,90 @@ def str_to_date(date_str):
 
 
 ## ---------------------------------------------------------------------------- ##
+
+
+def servicenow_select_table():
+    # Pick which table to pull from
+    find_elem_by_xpath('//*[@id="select2-chosen-1"]').click()
+
+    # Enter search info
+    find_elem_by_xpath(
+        '//*[@id="s2id_autogen1_search"]').send_keys('Knowledge [kb_knowledge]')
+
+    # Select 'Knowledge [kb_knowledge]'
+    kb_button = ''
+
+    find_elem_by_xpath('//span[text()="Knowledge [kb_knowledge]"]').click()
+
+
+## ---------------------------------------------------------------------------- ##
+
+
+def servicenow_fill_report_form():
+    # Switch to the correct frame
+    driver.switch_to.frame('gsft_main')
+
+    # Find report name and set as 'KCS Knowledge Base'
+    find_elem_by_xpath(
+        '//*[@id="report-name"]').send_keys('KCS Knowledge Base')
+
+    # Check to see Source Type is Table
+    # print(driver.find_element(By.XPATH, '//*[@id="select-source-type"]').get_property('label'))
+
+    # Select proper table
+    servicenow_select_table()
+
+    # Click the next button to load results
+    find_elem_by_xpath('//*[@id="next-button-step-1"]').click()
+
+
+## ---------------------------------------------------------------------------- ##
+
+
+def servicenow_filter_results():
+    # Click filter results
+    find_elem_by_xpath('//*[@id="open-filters-button"]').click()
+
+
+## ---------------------------------------------------------------------------- ##
+
+
+def servicenow_create_report():
+    # Go to Create Report page
+    driver.get(
+        'https://tamuplay.service-now.com/nav_to.do?uri=%2Fsys_report_template.do%3Fsysparm_create%3Dtrue')
+
+    servicenow_fill_report_form()
+    servicenow_filter_results()
+
+    # wait till kb_knowledge.csv has downloaded
+    kb_file = os.path.join(cwd, 'kb_knowledge.csv')
+
+    print('1. Add desired filters.')
+    print('2. Press \'Run\'.)
+    print('3. Right-Click Numbers > Export > CSV > Download')
+
+    while not os.path.exists(kb_file):
+        time.sleep(2.5)
+
+## ---------------------------------------------------------------------------- ##
 # TODO Navigate to Reports and generate CSV
 
 
 def generate_kb_list():
-    ''' 
-    # Navigating to Reports page
-    # Switch to the correct frame
-    driver.switch_to.default_content()
+    servicenow_create_report()
 
-    # Check to make sure that the Navigator pane is open (is 'Minimize Navigator')
-    title="Minimize Navigator"
+    print('\n Generating KB_Kist...')
+    temp_kb_list = csv_read('kb_knowledge.csv')
 
-    # Select Filter Navigator
-    id="filter"
-
-    # Send keys "Reports"
-    text = "Reports"
-
-    # Change click Create New
-    text = "Create New"
-
-    # Switch back to the main frame
-    driver.switch_to.frame('gsft_main')
-
-    # Fill out report name
-    id="report-name"
-    send key "KCS Knowledge Base"
-
-    # Check to see Source Type is Table
-    id="select-source-type"
-
-    # Pick which table to pull from
-    id="select2-chosen-1"
-    send key "Knowledge [kb_knowledge]"
-
-    # Click the next button to load results
-    id="next-button-step-1"
-
-    # Click filter results
-    id="open-filters-button"
-
-    # Select Field button
-    text="-- choose field --"
-    send key "Knowledge base"
-    send key "DOWN"
-    send key "ENTER"
-
-    # Select KCS
-    id="select2-drop-mask"
-    send key "KCS"
-    send key "ENTER"
-
-    # Add an AND condition
-    data-original-title="Add AND condition"
-
-    # Select Field button
-    text="-- choose field --"
-    send key "Workflow"
-    send key "DOWN"
-    send key "ENTER"
-
-    # Select Published
-    label="-- None --"
-    label="Published"
-
-    # Add an AND condition
-    data-original-title="Add AND condition"
-
-    # Select Field button
-    text="-- choose field --"
-    send key "Valid to"
-    send key "DOWN"
-    send key "ENTER"
-
-    # Select Before
-    label="on"
-    label="before"
-
-    # Select Today
-    text="-- None --"
-    text="Days"
-    text="Today"
-
-    # Run Report
-    id="run-report"
-
-    # Export CSV
-    text = "Number"
-    *RIGHT CLICK*
-    text = "Export"
-    text = "CSV"
-
-    # Select Download
-    id="download_button"
-
-    '''
-
-    print('Generating KB_Kist...')
-    files = os.listdir(cwd)
-
-    # Instantiate list for csv files
-    csv_files = []
-
-    # Check list of all files for all csv files
-    # Add csv files ot list of csv files
-    for file in files:
-        if file.endswith('.csv'):
-            csv_files.append(file)
-
-    kb_list = []
-
-    # For all csv files read in report
-    for csv_file in csv_files:
-        print('Now reading \"' + csv_file + '\"...')
-        temp_kb_list = csv_read(csv_file)
-
-        for article in temp_kb_list:
+    for article in temp_kb_list:
+        if article == number:
+            continue
+        else:
             kb_list.append(article)
 
-        print('Finished reading \"' + csv_file + '\"!')
-
     print('KB_List generated!')
+
     return kb_list
 
 
@@ -225,9 +242,7 @@ def csv_read(csv_name):
 
 
 def select_tamu_login():
-    tamu_login = driver.find_element(
-        By.XPATH, "//*[@data-mce-src='/tamu_stack.png']")
-    tamu_login.click()
+    find_elem_by_xpath('//*[@data-mce-src="/tamu_stack.png"]').click()
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -245,9 +260,9 @@ def enter_user():
 
 
 def job_start():
-    print('\nBeginning Meta Tag Scrape')
+    print('\nBeginning Valid To Update')
     print('There are ' + str(number_of_articles), end='')
-    print(' articles that need to be scraped.')
+    print(' articles that need to updated.')
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -266,7 +281,7 @@ def servicenow_login():
 
     # Start the clock
     start_time = time.time()
-    job_start()
+    # job_start()
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -495,6 +510,8 @@ def servicenow_update_valid_to(kb_number):
 
 
 ## ---------------------------------------------------------------------------- ##
+# Update method to rely on correct page,
+# not waiting a set period of time
 
 
 def servicenow_publish_kb(kb_number):
