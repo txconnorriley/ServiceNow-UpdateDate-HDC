@@ -3,16 +3,12 @@ import csv
 import os
 import sys
 import datetime
-
+from datetime import date
 from selenium import webdriver
 from selenium.webdriver import ActionChains
-import selenium.webdriver.common.action_chains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.select import Select
-from selenium.webdriver.support.ui import WebDriverWait
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -35,13 +31,11 @@ count = 0
 number_of_articles = 0
 start_time = 0
 cwd = os.getcwd()
+kb_file = os.path.join(cwd, 'kb_knowledge.csv')
 
 ## ---------------------------------------------------------------------------- ##
 
 '''  # TODO
-- Automate pulling KCS Knowledge Base entries
-- Download as CSV to working directory
-- Parse CSV using existing function csv_read
 '''  # TODO
 
 ## ---------------------------------------------------------------------------- ##
@@ -58,9 +52,8 @@ def find_elem_by_xpath(xpath):
             if attempt_count < 20:
                 pass
             else:
-                print("Unexpected error:", sys.exc_info()[0])
-                driver.quit()
-                raise
+                pass
+                return -1
 
         if not isinstance(var_name, str):
             return var_name
@@ -83,9 +76,8 @@ def find_elem_by_css(selector):
             if attempt_count < 20:
                 pass
             else:
-                print("Unexpected error:", sys.exc_info()[0])
-                driver.quit()
-                raise
+                pass
+                return -1
 
         if not isinstance(var_name, str):
             return var_name
@@ -98,6 +90,8 @@ def find_elem_by_css(selector):
 
 
 def print_progress():
+    global count
+
     percent_done = round(float(count) / float(number_of_articles) * 100.0, 2)
     print('\n----- ' + str(percent_done) + '% -----')
     print('Time elapsed: %s s \n' % round(time.time() - start_time, 2))
@@ -156,8 +150,12 @@ def servicenow_fill_report_form():
     driver.switch_to.frame('gsft_main')
 
     # Find report name and set as 'KCS Knowledge Base'
-    find_elem_by_xpath(
-        '//*[@id="report-name"]').send_keys('KCS Knowledge Base')
+    report_name = find_elem_by_xpath('//*[@id="report-name"]')
+
+    while(report_name == -1):
+        report_name = find_elem_by_xpath('//*[@id="report-name"]')
+
+    report_name.send_keys('KCS Knowledge Base')
 
     # Check to see Source Type is Table
     # print(driver.find_element(By.XPATH, '//*[@id="select-source-type"]').get_property('label'))
@@ -189,32 +187,37 @@ def servicenow_create_report():
     servicenow_filter_results()
 
     # wait till kb_knowledge.csv has downloaded
-    kb_file = os.path.join(cwd, 'kb_knowledge.csv')
-
+    print(' ')
     print('1. Add desired filters.')
-    print('2. Press \'Run\'.)
+    print('2. Press \'Run\'.')
     print('3. Right-Click Numbers > Export > CSV > Download')
 
     while not os.path.exists(kb_file):
         time.sleep(2.5)
 
 ## ---------------------------------------------------------------------------- ##
-# TODO Navigate to Reports and generate CSV
 
 
 def generate_kb_list():
-    servicenow_create_report()
+    if not os.path.exists(kb_file):
+        servicenow_create_report()
 
-    print('\n Generating KB_Kist...')
+    kb_list = []
+
+    print(' ')
+    print('Generating KB_Kist...')
     temp_kb_list = csv_read('kb_knowledge.csv')
 
     for article in temp_kb_list:
-        if article == number:
+        if article == 'number':
             continue
         else:
             kb_list.append(article)
 
     print('KB_List generated!')
+
+    global number_of_articles
+    number_of_articles = len(kb_list)
 
     return kb_list
 
@@ -278,10 +281,6 @@ def servicenow_login():
     # Wait for user to finish logging in
     while 'tamuplay' not in driver.current_url:
         time.sleep(1)
-
-    # Start the clock
-    start_time = time.time()
-    # job_start()
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -367,7 +366,7 @@ def job_complete():
     print('******************')
     print(' ')
 
-    time.sleep(10)
+    time.sleep(5)
 
 
 ## ---------------------------------------------------------------------------- ##
@@ -389,27 +388,12 @@ def interact_search_field(search_field, kb_number):
 def servicenow_search(kb_number):
     driver.switch_to.default_content()
 
-    # Type in search field and search for article
-    search_field = ''
-    search_count = 0
+    search_field = find_elem_by_xpath('//*[@id="sysparm_search"]')
 
-    while(True):
-        try:
-            search_field = driver.find_element(By.ID, 'sysparm_search')
-        except Exception:
-            pass
+    if search_field == -1:
+        return
 
-        if not isinstance(search_field, str):
-            interact_search_field(search_field, kb_number)
-            break
-
-        if search_count == 10:
-            return
-
-        search_count += 1
-
-        time.sleep(0.5)
-
+    interact_search_field(search_field, kb_number)
     servicenow_edit_kb(kb_number)
 
 
@@ -420,124 +404,81 @@ def servicenow_edit_kb(kb_number):
     # Change the frame
     driver.switch_to.frame('gsft_main')
 
-    # Find edit button and click
-    edit_button = ''
-    edit_count = 0
+    edit_button = find_elem_by_xpath('//*[@id="editArticle"]')
 
-    while(True):
-        try:
-            edit_button = driver.find_element(
-                By.XPATH, "//*[@id='editArticle']")
-        except Exception:
-            pass
+    if edit_button == -1:
+        return
 
-        if not isinstance(edit_button, str):
-            print('Editing article: ' + kb_number)
-            edit_button.click()
-            break
+    print('Editing article: ' + kb_number)
+    edit_button.click()
+    servicenow_checkout_kb(kb_number)
 
-        if edit_count == 10:
-            return
 
-        edit_count += 1
+## ---------------------------------------------------------------------------- ##
 
-        time.sleep(0.5)
 
+def servicenow_checkout_kb(kb_number):
+    checkout_button = find_elem_by_xpath('//button[@name="not_important"]')
+
+    if checkout_button == -1:
+        if find_elem_by_xpath('//*[@id="editArticle"]') != -1:
+            servicenow_edit_kb(kb_number)
+        else:
+            servicenow_update_valid_to(kb_number)
+        return
+
+    print('Checking out article: ' + kb_number)
+    checkout_button.click()
     servicenow_update_valid_to(kb_number)
 
 
 ## ---------------------------------------------------------------------------- ##
-# Update method to rely on correct page,
-# not waiting a set period of time
-
-
-def servicenow_checkout_kb(kb_number):
-    time.sleep(0.5)
-    checkout_button = ''
-    count = 0
-
-    while(True):
-        try:
-            checkout_button = driver.find_element(
-                By.XPATH, "//button[@name='not_important']")
-        except Exception:
-            pass
-
-        if not isinstance(checkout_button, str):
-            print('Checking out article: ' + kb_number)
-            checkout_button.click()
-            time.sleep(2)
-            break
-
-        if count >= 5:
-            servicenow_edit_kb(kb_number)
-
-        count += 1
-
-        time.sleep(2)
-
-
-## ---------------------------------------------------------------------------- ##
-# Update method to rely on correct page,
-# not waiting a set period of time
 
 
 def servicenow_update_valid_to(kb_number):
-    valid_to_field = ''
-    count = 0
-    while(True):
-        try:
-            valid_to_field = driver.find_element(
-                By.ID, 'kb_knowledge.valid_to')
-        except Exception:
-            pass
+    valid_to_field = find_elem_by_xpath('//*[@id="kb_knowledge.valid_to"]')
 
-        if not isinstance(valid_to_field, str):
-            print('Updating from: ' + valid_to_field.get_attribute('value'))
+    if valid_to_field == -1:
+        driver.switch_to.default_content()
+        servicenow_edit_kb(kb_number)
+        return
 
-            # Clear current value, and update to one year from current date
-            valid_to_field.clear()
-            valid_to_field.send_keys(calc_valid_to_date())
-            print('Updating to: ' + calc_valid_to_date())
-            break
+    print('Updating from: ' + valid_to_field.get_attribute('value'))
 
-        if count == 6:
-            driver.switch_to.default_content()
-            servicenow_edit_kb(kb_number)
+    # Clear current value, and update to one year from current date
+    valid_to_field.clear()
+    valid_to_field.send_keys(calc_valid_to_date())
+    print('Updating to: ' + calc_valid_to_date())
 
-        count += 1
-        time.sleep(2)
+    servicenow_publish_kb(kb_number)
 
 
 ## ---------------------------------------------------------------------------- ##
-# Update method to rely on correct page,
-# not waiting a set period of time
 
 
 def servicenow_publish_kb(kb_number):
-    publish_button = ''
-    while(True):
-        try:
-            publish_button = driver.find_element(
-                By.XPATH, "//button[@id='publish_knowledge']")
-        except Exception:
-            pass
+    publish_button = find_elem_by_xpath('//button[@id="publish_knowledge"]')
 
-        if not isinstance(publish_button, str):
-            print('Publishing article: ' + kb_number)
-            publish_button.click()
-            break
+    if publish_button == -1:
+        return
 
-        time.sleep(2)
+    print('Publishing article: ' + kb_number)
+    publish_button.click()
 
 
 ## ---------------------------------------------------------------------------- ##
 
 
 def servicenow_process_kbs():
+    global count, start_time
+
     # Generate KB list and update global num_articles
     kb_list = generate_kb_list()
-    number_of_articles = len(kb_list)
+
+    job_start()
+    start_time = time.time()
+
+    print_progress()
 
     # For each article in the list...
     for article in kb_list:
@@ -545,8 +486,8 @@ def servicenow_process_kbs():
         servicenow_search(article)
 
         # Print the progress and increment by one
-        print_progress()
         count += 1
+        print_progress()
 
         # Give time for the system to recover
         time.sleep(1)
@@ -562,7 +503,7 @@ driver.get('https://tamuplay.service-now.com/')
 servicenow_login()
 
 # For all KBs in the list, process valid_to dates
-# Search > Edit > Checkout > Update > Publish
 servicenow_process_kbs()
 
+# Close Firefox
 driver.quit()
