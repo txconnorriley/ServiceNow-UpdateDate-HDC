@@ -6,13 +6,13 @@ This project was built using:
 - Python 3.8.6
 
 Prepare Selenium
-- Download *selenium-3.141.0.tar.gz*
+- Download `selenium-3.141.0.tar.gz`from repo
 - Navigate to the file
 - Unpack the file
 - Install the module by executing `python3 setup.py install`
 
 Prepare Firefox Driver
-- Download geckodriver from Repo
+- Download geckodriver from repo
 - Give executable permission `sudo chmod +x geckodriver`
 
 ## Execution
