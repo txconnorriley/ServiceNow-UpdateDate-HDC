@@ -15,22 +15,21 @@ Prepare Firefox Driver
 - Download geckodriver from Repo
 - Give executable permission `sudo chmod +x geckodriver`
 
-Prepare CSV file
-- Go to tamu.service-now.com
-- Run report with Table "Knowledge [kb_knowledge]"
-- Set filters to "Knowledge Base is KCS" and "Workflow is Published"
-- Click "Run"
-- Right-click the header row
-- Click "Export" > "CSV"
-- Download the exported CSV file to the directory of the Repo
-
 ## Execution
 If Python3 is set as default:
 `python SNow_Update_Date.py`
 
 Otherwise:
-`python3 SNow_Update_Date.py`
+`python3 SNow_Update_Date.py` 
+
+During execution, the program relies on a CSV to read in articles in need of update. There are two methods that the CSV is loaded:
+1. The CSV file can be preloaded as `kb_knowledge.csv` and will skip the auto-generated report process
+2. If no file labeled as `kb_knowledge.csv` is found, the system will auto-generate a report with user input for filters  
+
+Upon completion, all .csv and .log files will be removed as they are no longer needed.
+
 <br />
 <br />
 <br />
+
 [![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
