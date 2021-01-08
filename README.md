@@ -12,7 +12,7 @@ Prepare Selenium
 - Install the module by executing `python3 setup.py install`
 
 Prepare Firefox Driver
-- Download geckodriver from repo
+- Download `geckodriver` from repo
 - Give executable permission `sudo chmod +x geckodriver`
 
 ## Execution
